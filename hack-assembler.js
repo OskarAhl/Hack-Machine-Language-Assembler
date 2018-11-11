@@ -1,4 +1,5 @@
 // C - instruction 
+// todo add constants to separate file - only readable
 const COMP_NOT_A_BINARY = {
     '0': '101010',
     '1': '111111',
@@ -107,6 +108,9 @@ rl.on('line', (asm_line) => {
     if (ignore_line) return;
 
     const parsed_asm = asm_parser(asm_line);
+
+    if (!parsed_asm) return;
+
     fs.write(out_file, parsed_asm + '\n', () => {
         // console.log('object');
     });
@@ -134,13 +138,59 @@ function parse_asm() {
     };
 
     return function parse(asm_line) {
-        console.log(asm_line);
-        return asm_line;
+        let asm_stripped = strip_inline_comment(asm_line);
+        let hack;
+    
+        if (asm_stripped.startsWith('@')) hack = parse_a_instruction(asm_stripped);
+        else hack = parse_c_instruction(asm_stripped);
+    
+        return hack;
     };
 }
 
+function parse_a_instruction(asm_line) {
+    const op_code = '0';
+    // can be to symbol @LOOP, @R1 or number @34
+    let a_instruction = asm_line.split('@')[1];
+    const a_num = Number(a_instruction);
+    // if number: opcode + number in binary 15
+    if (typeof a_num === 'number') {
+        const num_binary = a_num.toString(2).padStart(15, '0');
+        return `${op_code}${num_binary}`
+    } else {
+        // if symbol - variable: lookup variable in hash table else add,
+        // if symbol - label: handle label
+    }
+    return asm_line;
+}
+
+function parse_c_instruction(asm_line) {
+    let asm_stripped = strip_inline_comment(asm_line);
+    // if no jumps
+    const jump = '000';
+    const op_code = '111';
+    const a = '0';
+    if (asm_stripped.includes('=')) {
+        const c_asm_arr = asm_stripped.split('=');
+        const c_binary_arr = c_asm_arr.map((asm, i) => {
+            if (i === 0) return DESTINATION_BINARY[asm];
+            return COMP_NOT_A_BINARY[asm];
+        });
+        return `${op_code}${a}${c_binary_arr.reverse().join('')}${jump}`;
+    }
+    // todo add check for jump
+    return asm_line;
+}
+
+function strip_inline_comment(asm_line) {
+    const has_inline_comment = asm_line.includes('//');
+    if (has_inline_comment) {
+        return asm_line.split('//')[0].trim();
+    }
+    return asm_line;
+}
+
 function should_ignore_line(asm_line) {
-    // ignore comment lines and empty lines
     return is_comment(asm_line) || asm_line === '';
 }
 
