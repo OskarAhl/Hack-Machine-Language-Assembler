@@ -1,8 +1,36 @@
 // C - instruction 
+const COMP_NOT_A_BINARY = {
+    '0': '101010',
+    '1': '111111',
+    '-1': '111010',
+    'D': '001100',
+    'A': '110000',
+    '!D': '001101',
+    '!A': '110001',
+    '-D': '001111',
+    '-A': '110011',
+    'D+1': '011111',
+    'A+1': '110111',
+    'D-1': '001110',
+    'A-1': '110010',
+    'D+A': '000010',
+    'D-A': '010011',
+    'A-D': '000111',
+    'D&A': '000000',
+    'D|A': '010101',
+};
 // A - instruction
-const COMP_A = {
+const COMP_A_BINARY = {
     'M': '110000',
-    '!M':  
+    '!M': '110001',
+    '-M': '110011',
+    'M+1': '110111',
+    'M-1': '110010',
+    'D+M': '000010',
+    'D-M': '010011',
+    'M-D': '000111',
+    'D&M': '000000',
+    'D|M': '010101',  
 };
 
 const JUMP_BINARY = {
@@ -28,7 +56,7 @@ const DESTINATION_BINARY = {
 };
 
 // { } Symbols: predefined, labels, variables
-const PRE_DEFINED_SYMBOLS = {
+const PRE_DEFINED_SYMBOL_ADDRESSES = {
     'SP': 0,
     'LCL': 1,
     'ARG': 2,
@@ -85,30 +113,30 @@ rl.on('line', (asm_line) => {
 });
 
 function parse_asm() {
-    const symbol_table = {
-        ...PRE_DEFINED_SYMBOLS,
+    const symbol_address_table = {
+        ...PRE_DEFINED_SYMBOL_ADDRESSES,
     };
 
-    const dest_table = {
+    const dest_binary_table = {
         ...DESTINATION_BINARY,
     };
 
-    const jump_table = {
+    const jump_binary_table = {
         ...JUMP_BINARY,
     };
 
-    const comp_table_a = {
-        ...COMP_A,
-    }
+    const comp_binary_table_a = {
+        ...COMP_A_BINARY,
+    };
 
-    const comp_table_not_a = {
-        ...COMP_NOT_A,
-    }
+    const comp_binary_table_not_a = {
+        ...COMP_NOT_A_BINARY,
+    };
 
     return function parse(asm_line) {
         console.log(asm_line);
         return asm_line;
-    }
+    };
 }
 
 function should_ignore_line(asm_line) {
