@@ -57,7 +57,7 @@ const DESTINATION_BINARY = {
 };
 
 // { } Symbols: predefined, labels, variables
-const PRE_DEFINED_SYMBOL_ADDRESSES = {
+const SYMBOL_TABLE = {
     'SP': 0,
     'LCL': 1,
     'ARG': 2,
@@ -103,6 +103,8 @@ const outfile_name = file
 out_file = fs.openSync(outfile_name, 'w');
 
 const asm_parser = parse_asm();
+const a_parser = init_a_parser(16);
+
 rl.on('line', (asm_line) => {
     const ignore_line = should_ignore_line(asm_line);
     if (ignore_line) return;
@@ -117,10 +119,6 @@ rl.on('line', (asm_line) => {
 });
 
 function parse_asm() {
-    const symbol_address_table = {
-        ...PRE_DEFINED_SYMBOL_ADDRESSES,
-    };
-
     const dest_binary_table = {
         ...DESTINATION_BINARY,
     };
@@ -141,27 +139,43 @@ function parse_asm() {
         let asm_stripped = strip_inline_comment(asm_line);
         let hack;
     
-        if (asm_stripped.startsWith('@')) hack = parse_a_instruction(asm_stripped);
+        if (asm_stripped.startsWith('@')) hack = a_parser(asm_stripped);
         else hack = parse_c_instruction(asm_stripped);
     
         return hack;
     };
 }
 
-function parse_a_instruction(asm_line) {
-    const op_code = '0';
-    // can be to symbol @LOOP, @R1 or number @34
-    let a_instruction = asm_line.split('@')[1];
-    const a_num = Number(a_instruction);
-    // if number: opcode + number in binary 15
-    if (typeof a_num === 'number') {
-        const num_binary = a_num.toString(2).padStart(15, '0');
-        return `${op_code}${num_binary}`
-    } else {
-        // if symbol - variable: lookup variable in hash table else add,
-        // if symbol - label: handle label
+function init_a_parser(var_address_start) {
+    let variable_address = var_address_start;
+    const OP_CODE = '0';
+
+    return function parse_a_instruction(asm_line) {
+        // can be variable e.g. @foo or number e.g. @34
+        let a_instruction = asm_line.split('@')[1];
+        let num_binary;
+        let num_to_binary;
+        const a_num = Number(a_instruction);
+        const a_is_number = !Number.isNaN(a_num);
+    
+        // if number: opcode + number in binary 15
+        if (a_is_number) {
+            num_to_binary = a_num;
+        } else {
+            let address;
+            // add only if new variable - else use existing address
+            if (SYMBOL_TABLE[a_instruction]) {
+                address = SYMBOL_TABLE[a_instruction];
+            } else {
+                address = variable_address;
+                SYMBOL_TABLE[a_instruction] = address;
+                variable_address += 1;
+            }
+            num_to_binary = address;
+        }
+        num_binary = num_to_binary.toString(2).padStart(15, '0');
+        return `${OP_CODE}${num_binary}`
     }
-    return asm_line;
 }
 
 function parse_c_instruction(asm_line) {
@@ -174,7 +188,7 @@ function parse_c_instruction(asm_line) {
         const c_asm_arr = asm_stripped.split('=');
         const c_binary_arr = c_asm_arr.map((asm, i) => {
             if (i === 0) return DESTINATION_BINARY[asm];
-            return COMP_NOT_A_BINARY[asm];
+            if (i === 1) return COMP_NOT_A_BINARY[asm];
         });
         return `${op_code}${a}${c_binary_arr.reverse().join('')}${jump}`;
     }

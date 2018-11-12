@@ -3,11 +3,14 @@
 // by Nisan and Schocken, MIT Press.
 // File name: projects/06/add/Add.asm
 
-// Computes R0 = 2 + 3  (R0 refers to RAM[0])
+// Computes R0 = 2 + 3
 
-@2
-D=A
+@2 //is a instruction
+D=A //111 0 110000 010 000
 @3
 D=D+A
 @0
 M=D
+@hello
+@hello
+@test
