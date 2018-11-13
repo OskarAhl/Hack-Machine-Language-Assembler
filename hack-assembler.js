@@ -119,7 +119,7 @@ rl.on('line', (asm_line) => {
         // console.log('object');
     });
 }).on('close', () => {
-    console.log(all_asm);
+    // console.log(all_asm);
 });
 
 function parse_asm() {
@@ -187,12 +187,26 @@ function parse_c_instruction(asm_line) {
     // if no jumps
     const jump = '000';
     const op_code = '111';
-    const a = '0';
-    if (asm_stripped.includes('=')) {
+    let is_assignment = asm_stripped.includes('=');
+    let is_m = is_assignment && asm_stripped.split('=')[1].includes('M');
+    let is_comp = is_assignment && !asm_stripped.split('=')[1].includes('M');
+    let a;
+    // todo: cleanup this ==>
+    if (is_comp) {
+        a = 0;
         const c_asm_arr = asm_stripped.split('=');
         const c_binary_arr = c_asm_arr.map((asm, i) => {
             if (i === 0) return DESTINATION_BINARY[asm];
             if (i === 1) return COMP_NOT_A_BINARY[asm];
+        });
+        return `${op_code}${a}${c_binary_arr.reverse().join('')}${jump}`;
+    }
+    if (is_m) {
+        a = 1;
+        const c_asm_arr = asm_stripped.split('=');
+        const c_binary_arr = c_asm_arr.map((asm, i) => {
+            if (i === 0) return DESTINATION_BINARY[asm];
+            if (i === 1) return COMP_A_BINARY[asm];
         });
         return `${op_code}${a}${c_binary_arr.reverse().join('')}${jump}`;
     }
