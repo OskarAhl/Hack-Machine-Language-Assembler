@@ -1,6 +1,6 @@
 // C - instruction 
 // todo add constants to separate file - only readable
-const COMP_NOT_A_BINARY = {
+const COMP_NOT_A_BINARY = Object.freeze({
     '0': '101010',
     '1': '111111',
     '-1': '111010',
@@ -19,9 +19,9 @@ const COMP_NOT_A_BINARY = {
     'A-D': '000111',
     'D&A': '000000',
     'D|A': '010101',
-};
+});
 // A - instruction
-const COMP_A_BINARY = {
+const COMP_A_BINARY = Object.freeze({
     'M': '110000',
     '!M': '110001',
     '-M': '110011',
@@ -32,9 +32,9 @@ const COMP_A_BINARY = {
     'M-D': '000111',
     'D&M': '000000',
     'D|M': '010101',  
-};
+});
 
-const JUMP_BINARY = {
+const JUMP_BINARY = Object.freeze({
     'null': '000',
     'JGT': '001',
     'JEQ': '010',
@@ -43,9 +43,9 @@ const JUMP_BINARY = {
     'JNE': '101',
     'JLE': '110',
     'JMP': '111',
-};
+});
 
-const DESTINATION_BINARY = {
+const DESTINATION_BINARY = Object.freeze({
     'null': '000',
     'M': '001',
     'D': '010',
@@ -54,7 +54,7 @@ const DESTINATION_BINARY = {
     'AM': '101',
     'AD': '110',
     'AMD': '111',
-};
+});
 
 // { } Symbols: predefined, labels, variables
 const SYMBOL_TABLE = {
@@ -105,10 +105,12 @@ out_file = fs.openSync(outfile_name, 'w');
 const asm_parser = parse_asm();
 const a_parser = init_a_parser(16);
 
+const all_asm = [];
 rl.on('line', (asm_line) => {
     const ignore_line = should_ignore_line(asm_line);
     if (ignore_line) return;
-
+    all_asm.push(asm_line);
+    // Todo: add (label) to symbol table and remove line
     const parsed_asm = asm_parser(asm_line);
 
     if (!parsed_asm) return;
@@ -116,6 +118,8 @@ rl.on('line', (asm_line) => {
     fs.write(out_file, parsed_asm + '\n', () => {
         // console.log('object');
     });
+}).on('close', () => {
+    console.log(all_asm);
 });
 
 function parse_asm() {
