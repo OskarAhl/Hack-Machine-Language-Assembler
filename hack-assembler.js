@@ -123,22 +123,6 @@ rl.on('line', (asm_line) => {
 });
 
 function parse_asm() {
-    const dest_binary_table = {
-        ...DESTINATION_BINARY,
-    };
-
-    const jump_binary_table = {
-        ...JUMP_BINARY,
-    };
-
-    const comp_binary_table_a = {
-        ...COMP_A_BINARY,
-    };
-
-    const comp_binary_table_not_a = {
-        ...COMP_NOT_A_BINARY,
-    };
-
     return function parse(asm_line) {
         let asm_stripped = strip_inline_comment(asm_line);
         let hack;
@@ -184,9 +168,11 @@ function init_a_parser(var_address_start) {
 
 function parse_c_instruction(asm_line) {
     let asm_stripped = strip_inline_comment(asm_line);
-    const jump = '000';
     const OP_CODE = '111';
-    let is_assignment = asm_stripped.includes('=');
+    let jump_bits = '000';
+    let dest_bits = '000';
+    const is_assignment = asm_stripped.includes('=');
+    const is_jump = asm_stripped.includes(';');
     let a;
     let alu_bits;
 
@@ -196,25 +182,37 @@ function parse_c_instruction(asm_line) {
 
         if (is_comp) {
             a = 0;
-            alu_bits = alu_parser(asm_stripped, COMP_NOT_A_BINARY, DESTINATION_BINARY);
+            alu_bits = alu_parser(asm_stripped, COMP_NOT_A_BINARY, '=');
         }
         if (is_m) {
             a = 1;
-            alu_bits = alu_parser(asm_stripped, COMP_A_BINARY, DESTINATION_BINARY);
+            alu_bits = alu_parser(asm_stripped, COMP_A_BINARY, '=');
         }
-        return `${OP_CODE}${a}${alu_bits}${jump}`;
+        dest_bits = dest_parser(asm_stripped, DESTINATION_BINARY);
+        return `${OP_CODE}${a}${alu_bits}${dest_bits}${jump_bits}`;
     }
-    // todo add check for jump
+    if (is_jump) {
+        a = 0;
+        alu_bits = alu_parser(asm_stripped, COMP_NOT_A_BINARY, ';', 0);
+        jump_bits = jump_parser(asm_stripped, JUMP_BINARY);
+        return `${OP_CODE}${a}${alu_bits}${dest_bits}${jump_bits}`;
+    }
     return asm_line;
 }
 
-function alu_parser(asm_stripped, alu_table, des_table) {
-    const c_asm_arr = asm_stripped.split('=');
-    const c_binary_arr = c_asm_arr.map((asm, i) => {
-        if (i === 0) return des_table[asm];
-        if (i === 1) return alu_table[asm];
-    });
-    return c_binary_arr.reverse().join('');
+function dest_parser(asm_stripped, dest_table) {
+    const code = asm_stripped.split('=')[0];
+    return dest_table[code];
+}
+
+function jump_parser(asm_stripped, jump_table) {
+    const code = asm_stripped.split(';')[1];
+    return jump_table[code];
+}
+
+function alu_parser(asm_stripped, alu_table, sign, pos = 1) {
+    let code = asm_stripped.split(sign)[pos];
+    return alu_table[code];
 }
 
 function strip_inline_comment(asm_line) {
