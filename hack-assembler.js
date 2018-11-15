@@ -184,34 +184,37 @@ function init_a_parser(var_address_start) {
 
 function parse_c_instruction(asm_line) {
     let asm_stripped = strip_inline_comment(asm_line);
-    // if no jumps
     const jump = '000';
-    const op_code = '111';
+    const OP_CODE = '111';
     let is_assignment = asm_stripped.includes('=');
-    let is_m = is_assignment && asm_stripped.split('=')[1].includes('M');
-    let is_comp = is_assignment && !asm_stripped.split('=')[1].includes('M');
     let a;
-    // todo: cleanup this ==>
-    if (is_comp) {
-        a = 0;
-        const c_asm_arr = asm_stripped.split('=');
-        const c_binary_arr = c_asm_arr.map((asm, i) => {
-            if (i === 0) return DESTINATION_BINARY[asm];
-            if (i === 1) return COMP_NOT_A_BINARY[asm];
-        });
-        return `${op_code}${a}${c_binary_arr.reverse().join('')}${jump}`;
-    }
-    if (is_m) {
-        a = 1;
-        const c_asm_arr = asm_stripped.split('=');
-        const c_binary_arr = c_asm_arr.map((asm, i) => {
-            if (i === 0) return DESTINATION_BINARY[asm];
-            if (i === 1) return COMP_A_BINARY[asm];
-        });
-        return `${op_code}${a}${c_binary_arr.reverse().join('')}${jump}`;
+    let alu_bits;
+
+    if (is_assignment) {
+        let is_m = asm_stripped.split('=')[1].includes('M');
+        let is_comp = !asm_stripped.split('=')[1].includes('M');
+
+        if (is_comp) {
+            a = 0;
+            alu_bits = alu_parser(asm_stripped, COMP_NOT_A_BINARY, DESTINATION_BINARY);
+        }
+        if (is_m) {
+            a = 1;
+            alu_bits = alu_parser(asm_stripped, COMP_A_BINARY, DESTINATION_BINARY);
+        }
+        return `${OP_CODE}${a}${alu_bits}${jump}`;
     }
     // todo add check for jump
     return asm_line;
+}
+
+function alu_parser(asm_stripped, alu_table, des_table) {
+    const c_asm_arr = asm_stripped.split('=');
+    const c_binary_arr = c_asm_arr.map((asm, i) => {
+        if (i === 0) return des_table[asm];
+        if (i === 1) return alu_table[asm];
+    });
+    return c_binary_arr.reverse().join('');
 }
 
 function strip_inline_comment(asm_line) {
