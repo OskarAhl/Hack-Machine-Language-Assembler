@@ -1,5 +1,3 @@
-// C - instruction 
-// todo add constants to separate file - only readable
 const COMP_NOT_A_BINARY = Object.freeze({
     '0': '101010',
     '1': '111111',
@@ -83,8 +81,6 @@ const SYMBOL_TABLE = {
     'KBD': 24576,  
 };
 
-// Read file line by line --> translate to C and A
-// Parsing: ignore whitespace and comments //
 const readline = require('readline');
 const fs = require('fs');
 const file = process.argv[2];
@@ -106,21 +102,45 @@ const asm_parser = parse_asm();
 const a_parser = init_a_parser(16);
 
 const all_asm = [];
+let line_count = 0;
 rl.on('line', (asm_line) => {
-    const ignore_line = should_ignore_line(asm_line);
+    const asm_trimmed = asm_line.trim();
+    const ignore_line = should_ignore_line(asm_trimmed);
     if (ignore_line) return;
-    all_asm.push(asm_line);
-    // Todo: add (label) to symbol table and remove line
-    const parsed_asm = asm_parser(asm_line);
 
-    if (!parsed_asm) return;
+    if (asm_trimmed.startsWith('(')) {
+        let test = strip_inline_comment(asm_trimmed).slice(1, -1);
+        SYMBOL_TABLE[test] = line_count;
+        return;
+    }
 
-    fs.write(out_file, parsed_asm + '\n', () => {
-        // console.log('object');
-    });
+    line_count += 1;
+    all_asm.push(asm_trimmed);
 }).on('close', () => {
-    // console.log(all_asm);
+    write_file(all_asm);
 });
+
+async function write_file(all_asm) {
+    for (const asm_line of all_asm) {
+        const parsed_asm = asm_parser(asm_line);
+        try {
+            await write(parsed_asm);
+        } catch(e) {
+            console.log(`error writing parsed asm: ${e}`);
+        }
+    }
+}
+
+function write(parsed_asm) {
+    return new Promise((resolve, reject) => {
+        fs.write(out_file, `${parsed_asm}\n`, (err) => {
+            if (err) {
+                reject(err);
+            }
+            resolve();
+        });
+    });
+}
 
 function parse_asm() {
     return function parse(asm_line) {
@@ -152,7 +172,7 @@ function init_a_parser(var_address_start) {
         } else {
             let address;
             // add only if new variable - else use existing address
-            if (SYMBOL_TABLE[a_instruction]) {
+            if (SYMBOL_TABLE[a_instruction] || SYMBOL_TABLE[a_instruction] === 0) {
                 address = SYMBOL_TABLE[a_instruction];
             } else {
                 address = variable_address;
@@ -175,7 +195,6 @@ function parse_c_instruction(asm_line) {
     const is_jump = asm_stripped.includes(';');
     let a;
     let alu_bits;
-
     if (is_assignment) {
         let is_m = asm_stripped.split('=')[1].includes('M');
         let is_comp = !asm_stripped.split('=')[1].includes('M');
