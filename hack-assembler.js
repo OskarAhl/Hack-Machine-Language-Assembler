@@ -1,89 +1,14 @@
-const COMP_NOT_A_BINARY = Object.freeze({
-    '0': '101010',
-    '1': '111111',
-    '-1': '111010',
-    'D': '001100',
-    'A': '110000',
-    '!D': '001101',
-    '!A': '110001',
-    '-D': '001111',
-    '-A': '110011',
-    'D+1': '011111',
-    'A+1': '110111',
-    'D-1': '001110',
-    'A-1': '110010',
-    'D+A': '000010',
-    'D-A': '010011',
-    'A-D': '000111',
-    'D&A': '000000',
-    'D|A': '010101',
-});
-// A - instruction
-const COMP_A_BINARY = Object.freeze({
-    'M': '110000',
-    '!M': '110001',
-    '-M': '110011',
-    'M+1': '110111',
-    'M-1': '110010',
-    'D+M': '000010',
-    'D-M': '010011',
-    'M-D': '000111',
-    'D&M': '000000',
-    'D|M': '010101',  
-});
-
-const JUMP_BINARY = Object.freeze({
-    'null': '000',
-    'JGT': '001',
-    'JEQ': '010',
-    'JGE': '011',
-    'JLT': '100',
-    'JNE': '101',
-    'JLE': '110',
-    'JMP': '111',
-});
-
-const DESTINATION_BINARY = Object.freeze({
-    'null': '000',
-    'M': '001',
-    'D': '010',
-    'MD': '011',
-    'A': '100',
-    'AM': '101',
-    'AD': '110',
-    'AMD': '111',
-});
-
-// { } Symbols: predefined, labels, variables
-const SYMBOL_TABLE = {
-    'SP': 0,
-    'LCL': 1,
-    'ARG': 2,
-    'THIS': 3,
-    'THAT': 4,
-    'R0': 0,
-    'R1': 1,
-    'R2': 2,
-    'R3': 3,
-    'R4': 4,
-    'R5': 5,
-    'R6': 6,
-    'R7': 7,
-    'R8': 8,
-    'R9': 9,
-    'R10': 10,
-    'R11': 11,
-    'R12': 12,
-    'R13': 13,
-    'R14': 14,
-    'R15': 15,
-    'SCREEN': 16384,
-    'KBD': 24576,  
-};
-
 const readline = require('readline');
 const fs = require('fs');
 const file = process.argv[2];
+const binary_tables = require('./binary-lookup-tables');
+const { 
+    C_BINARY, 
+    C_A_BINARY, 
+    DESTINATION_BINARY, 
+    JUMP_BINARY, 
+    SYMBOL_MEM_LOC 
+} = binary_tables;
 
 const rl = readline.createInterface({
     input: fs.createReadStream(file),
@@ -110,7 +35,7 @@ rl.on('line', (asm_line) => {
 
     if (asm_trimmed.startsWith('(')) {
         let test = strip_inline_comment(asm_trimmed).slice(1, -1);
-        SYMBOL_TABLE[test] = line_count;
+        SYMBOL_MEM_LOC[test] = line_count;
         return;
     }
 
@@ -124,14 +49,14 @@ async function write_file(all_asm) {
     for (const asm_line of all_asm) {
         const parsed_asm = asm_parser(asm_line);
         try {
-            await write(parsed_asm);
+            await write_line(parsed_asm);
         } catch(e) {
             console.log(`error writing parsed asm: ${e}`);
         }
     }
 }
 
-function write(parsed_asm) {
+function write_line(parsed_asm) {
     return new Promise((resolve, reject) => {
         fs.write(out_file, `${parsed_asm}\n`, (err) => {
             if (err) {
@@ -172,11 +97,11 @@ function init_a_parser(var_address_start) {
         } else {
             let address;
             // add only if new variable - else use existing address
-            if (SYMBOL_TABLE[a_instruction] || SYMBOL_TABLE[a_instruction] === 0) {
-                address = SYMBOL_TABLE[a_instruction];
+            if (SYMBOL_MEM_LOC[a_instruction] || SYMBOL_MEM_LOC[a_instruction] === 0) {
+                address = SYMBOL_MEM_LOC[a_instruction];
             } else {
                 address = variable_address;
-                SYMBOL_TABLE[a_instruction] = address;
+                SYMBOL_MEM_LOC[a_instruction] = address;
                 variable_address += 1;
             }
             num_to_binary = address;
@@ -201,18 +126,18 @@ function parse_c_instruction(asm_line) {
 
         if (is_comp) {
             a = 0;
-            alu_bits = alu_parser(asm_stripped, COMP_NOT_A_BINARY, '=');
+            alu_bits = alu_parser(asm_stripped, C_BINARY, '=');
         }
         if (is_m) {
             a = 1;
-            alu_bits = alu_parser(asm_stripped, COMP_A_BINARY, '=');
+            alu_bits = alu_parser(asm_stripped, C_A_BINARY, '=');
         }
         dest_bits = dest_parser(asm_stripped, DESTINATION_BINARY);
         return `${OP_CODE}${a}${alu_bits}${dest_bits}${jump_bits}`;
     }
     if (is_jump) {
         a = 0;
-        alu_bits = alu_parser(asm_stripped, COMP_NOT_A_BINARY, ';', 0);
+        alu_bits = alu_parser(asm_stripped, C_BINARY, ';', 0);
         jump_bits = jump_parser(asm_stripped, JUMP_BINARY);
         return `${OP_CODE}${a}${alu_bits}${dest_bits}${jump_bits}`;
     }
