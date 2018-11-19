@@ -5,7 +5,7 @@
 * To learn more about hack - check out https://www.nand2tetris.org/
 
 To use:
-* node `file_name.asm`
+* `node file_name.asm`
 * --> creates a new file `file_name.hack`
 
 E.g. `add.asm`
