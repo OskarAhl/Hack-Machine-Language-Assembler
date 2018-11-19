@@ -10,7 +10,7 @@
 * Written in node.js 
 * Assembles machine language `.asm` into `.hack` machine code
 * Supports symbols (variables + labels)
-* To learn more about hack - check out [ NandToTetris](https://www.nand2tetris.org/)
+* To learn more about hack - check out [ Nand2Tetris](https://www.nand2tetris.org/)
 
 ### Usage:
 
