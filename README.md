@@ -1,14 +1,12 @@
 <div align="center">
     <h2> HACK MACHINE LANGUAGE ASSEMBLER</h2>
-    <sub>Created by
+    Created by
     <a href="https://github.com/OskarAhl">Oskar Ahlroth</a>
     :christmas_tree:
 </div>
 
 ---
 
-> Fully functional node.js assembler 
-:christmas_tree:
 * Assembles machine language `.asm` into `.hack` machine code
 * Supports symbols (variables + labels)
 * To learn more about hack - check out https://www.nand2tetris.org/
