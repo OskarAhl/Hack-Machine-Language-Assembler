@@ -1,5 +1,5 @@
 ### HACK MACHINE LANGUAGE ASSEMBLER
-* Assembles machine language into `.hack` machine code
+* Assembles machine language `.asm` into `.hack` machine code
 * Supports symbols (variables + labels)
 * Written in node.js
 * To learn more about hack - check out https://www.nand2tetris.org/
