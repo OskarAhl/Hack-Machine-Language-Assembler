@@ -25,26 +25,32 @@ out_file = fs.openSync(outfile_name, 'w');
 
 const parse_a_instruction = init_a_parser(16);
 const parse_c_instruction = init_c_parser();
+const init = init_read_file();
+init();
 
-const all_asm = [];
-let line_count = 0;
-rl.on('line', (asm_line) => {
-    const asm_trimmed = strip_inline_comment(asm_line.trim());
-    const ignore_line = should_ignore_line(asm_trimmed);
-    if (ignore_line) return;
-
-    const is_label = asm_trimmed.startsWith('(');
-    if (is_label) {
-        let symbol = asm_trimmed.slice(1, -1);
-        SYMBOL_MEM_LOC[symbol] = line_count;
-        return;
+function init_read_file () {
+    const all_asm = [];
+    let line_count = 0;
+    return function read_file() {
+        rl.on('line', (asm_line) => {
+            const asm_trimmed = strip_inline_comment(asm_line.trim());
+            const ignore_line = should_ignore_line(asm_trimmed);
+            if (ignore_line) return;
+        
+            const is_label = asm_trimmed.startsWith('(');
+            if (is_label) {
+                let symbol = asm_trimmed.slice(1, -1);
+                SYMBOL_MEM_LOC[symbol] = line_count;
+                return;
+            }
+        
+            line_count += 1;
+            all_asm.push(asm_trimmed);
+        }).on('close', () => {
+            write_file(all_asm);
+        });
     }
-
-    line_count += 1;
-    all_asm.push(asm_trimmed);
-}).on('close', () => {
-    write_file(all_asm);
-});
+}
 
 async function write_file(all_asm) {
     for (const asm_line of all_asm) {
