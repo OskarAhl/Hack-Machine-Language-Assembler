@@ -1,14 +1,14 @@
 const readline = require('readline');
 const fs = require('fs');
 const file = process.argv[2];
-const binary_tables = require('./binary-lookup-tables');
+const lookup_tables = require('./lookup-tables');
 const { 
     C_BINARY, 
     C_A_BINARY, 
     DESTINATION_BINARY, 
     JUMP_BINARY, 
     SYMBOL_MEM_LOC 
-} = binary_tables;
+} = lookup_tables;
 
 const rl = readline.createInterface({
     input: fs.createReadStream(file),
@@ -23,8 +23,8 @@ const outfile_name = file
 
 out_file = fs.openSync(outfile_name, 'w');
 
-const asm_parser = parse_asm();
-const a_parser = init_a_parser(16);
+const parse_a_instruction = init_a_parser(16);
+const parse_c_instruction = init_c_parser();
 
 const all_asm = [];
 let line_count = 0;
@@ -48,7 +48,7 @@ rl.on('line', (asm_line) => {
 
 async function write_file(all_asm) {
     for (const asm_line of all_asm) {
-        const parsed_asm = asm_parser(asm_line);
+        const parsed_asm = assemble(asm_line);
 
         try {
             await write_line(parsed_asm);
@@ -69,16 +69,14 @@ function write_line(parsed_asm) {
     });
 }
 
-function parse_asm() {
-    return function parse(asm_line) {
-        let hack;
-    
-        if (asm_line.startsWith('@')) hack = a_parser(asm_line);
-        else hack = parse_c_instruction(asm_line);
-    
-        return hack;
-    };
-}
+function assemble(asm_line) {
+    let hack;
+
+    if (asm_line.startsWith('@')) hack = parse_a_instruction(asm_line);
+    else hack = parse_c_instruction(asm_line);
+
+    return hack;
+};
 
 function init_a_parser(var_address_start) {
     let variable_address = var_address_start;
@@ -112,36 +110,39 @@ function init_a_parser(var_address_start) {
     }
 }
 
-function parse_c_instruction(asm_line) {
+function init_c_parser() {
     const OP_CODE = '111';
-    let jump_bits = '000';
-    let dest_bits = '000';
-    const is_assignment = asm_line.includes('=');
-    const is_jump = asm_line.includes(';');
-    let a;
-    let alu_bits;
-    if (is_assignment) {
-        let is_m = asm_line.split('=')[1].includes('M');
-        let is_comp = !asm_line.split('=')[1].includes('M');
 
-        if (is_comp) {
+    return function parse_c_instruction(asm_line) {
+        const is_assignment = asm_line.includes('=');
+        const is_jump = asm_line.includes(';');
+        let jump_bits = '000';
+        let dest_bits = '000';
+        let a;
+        let alu_bits;
+        if (is_assignment) {
+            let is_m = asm_line.split('=')[1].includes('M');
+            let is_comp = !asm_line.split('=')[1].includes('M');
+
+            if (is_comp) {
+                a = 0;
+                alu_bits = alu_parser(asm_line, C_BINARY, '=');
+            }
+            if (is_m) {
+                a = 1;
+                alu_bits = alu_parser(asm_line, C_A_BINARY, '=');
+            }
+            dest_bits = dest_parser(asm_line, DESTINATION_BINARY);
+            return `${OP_CODE}${a}${alu_bits}${dest_bits}${jump_bits}`;
+        }
+        if (is_jump) {
             a = 0;
-            alu_bits = alu_parser(asm_line, C_BINARY, '=');
+            alu_bits = alu_parser(asm_line, C_BINARY, ';', 0);
+            jump_bits = jump_parser(asm_line, JUMP_BINARY);
+            return `${OP_CODE}${a}${alu_bits}${dest_bits}${jump_bits}`;
         }
-        if (is_m) {
-            a = 1;
-            alu_bits = alu_parser(asm_line, C_A_BINARY, '=');
-        }
-        dest_bits = dest_parser(asm_line, DESTINATION_BINARY);
-        return `${OP_CODE}${a}${alu_bits}${dest_bits}${jump_bits}`;
+        return asm_line;
     }
-    if (is_jump) {
-        a = 0;
-        alu_bits = alu_parser(asm_line, C_BINARY, ';', 0);
-        jump_bits = jump_parser(asm_line, JUMP_BINARY);
-        return `${OP_CODE}${a}${alu_bits}${dest_bits}${jump_bits}`;
-    }
-    return asm_line;
 }
 
 function dest_parser(asm_stripped, dest_table) {
