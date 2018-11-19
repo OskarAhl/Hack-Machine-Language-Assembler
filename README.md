@@ -1,5 +1,5 @@
 <div align="center">
-    <h2> HACK MACHINE LANGUAGE ASSEMBLER</h2>
+    <h3> HACK MACHINE LANGUAGE ASSEMBLER</h3>
     Created by
     <a href="https://github.com/OskarAhl">Oskar Ahlroth</a>
     :christmas_tree:
