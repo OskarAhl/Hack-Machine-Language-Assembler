@@ -1,5 +1,5 @@
 <div align="center">
-    <h3> HACK MACHINE LANGUAGE ASSEMBLER</h3>
+    <h3> Hack Machine Language Assembler</h3>
     Created by
     <a href="https://github.com/OskarAhl">Oskar Ahlroth</a>
     :christmas_tree:
@@ -9,7 +9,7 @@
 
 * Assembles machine language `.asm` into `.hack` machine code
 * Supports symbols (variables + labels)
-* To learn more about hack - check out https://www.nand2tetris.org/
+* To learn more about hack - check out [ NandToTetris](https://www.nand2tetris.org/)
 
 ### Usage:
 
@@ -22,7 +22,7 @@ node file_name.asm
 
 E.g. `add.asm`
 
-```
+```javascript
 // Adds 2 + 3 and puts the result into Register 0
 @2
 D=A
