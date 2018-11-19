@@ -112,36 +112,32 @@ function init_a_parser(var_address_start) {
 
 function init_c_parser() {
     const OP_CODE = '111';
+    let jump_bits = '000';
+    let dest_bits = '000';
+    let a = 0;
+    let alu_bits;
 
     return function parse_c_instruction(asm_line) {
         const is_assignment = asm_line.includes('=');
         const is_jump = asm_line.includes(';');
-        let jump_bits = '000';
-        let dest_bits = '000';
-        let a;
-        let alu_bits;
+
         if (is_assignment) {
             let is_m = asm_line.split('=')[1].includes('M');
-            let is_comp = !asm_line.split('=')[1].includes('M');
 
-            if (is_comp) {
-                a = 0;
-                alu_bits = alu_parser(asm_line, C_BINARY, '=');
-            }
+            if (!is_m) alu_bits = alu_parser(asm_line, C_BINARY, '=');
+
             if (is_m) {
                 a = 1;
                 alu_bits = alu_parser(asm_line, C_A_BINARY, '=');
             }
             dest_bits = dest_parser(asm_line, DESTINATION_BINARY);
-            return `${OP_CODE}${a}${alu_bits}${dest_bits}${jump_bits}`;
         }
         if (is_jump) {
-            a = 0;
             alu_bits = alu_parser(asm_line, C_BINARY, ';', 0);
             jump_bits = jump_parser(asm_line, JUMP_BINARY);
-            return `${OP_CODE}${a}${alu_bits}${dest_bits}${jump_bits}`;
         }
-        return asm_line;
+
+        return `${OP_CODE}${a}${alu_bits}${dest_bits}${jump_bits}`;
     }
 }
 
