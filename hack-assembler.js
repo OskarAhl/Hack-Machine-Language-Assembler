@@ -90,13 +90,13 @@ function init_a_parser(var_address_start) {
         const a_num = Number(a_instruction);
         const a_is_number = !Number.isNaN(a_num);
     
-        // if number: opcode + number in binary 15
         if (a_is_number) {
             num_to_binary = a_num;
         } else {
             let address;
-            // add only if new variable - else use existing address
-            if (SYMBOL_MEM_LOC[a_instruction] || SYMBOL_MEM_LOC[a_instruction] === 0) {
+            let is_new_symbol = SYMBOL_MEM_LOC[a_instruction] || SYMBOL_MEM_LOC[a_instruction] === 0;
+
+            if (is_new_symbol) {
                 address = SYMBOL_MEM_LOC[a_instruction];
             } else {
                 address = variable_address;
@@ -112,48 +112,38 @@ function init_a_parser(var_address_start) {
 
 function init_c_parser() {
     const OP_CODE = '111';
-    let jump_bits = '000';
-    let dest_bits = '000';
-    let a = 0;
-    let alu_bits;
 
     return function parse_c_instruction(asm_line) {
         const is_assignment = asm_line.includes('=');
         const is_jump = asm_line.includes(';');
+        let jump_bits = '000';
+        let dest_bits = '000';
+        let a = 0;
+        let alu_bits;
 
         if (is_assignment) {
             let is_m = asm_line.split('=')[1].includes('M');
 
-            if (!is_m) alu_bits = alu_parser(asm_line, C_BINARY, '=');
+            if (!is_m) alu_bits = binary_lookup({ asm_line, table: C_BINARY, sign: '=' });
 
             if (is_m) {
                 a = 1;
-                alu_bits = alu_parser(asm_line, C_A_BINARY, '=');
+                alu_bits = binary_lookup({ asm_line, table: C_A_BINARY, sign: '='});
             }
-            dest_bits = dest_parser(asm_line, DESTINATION_BINARY);
+            dest_bits = binary_lookup({ asm_line, table: DESTINATION_BINARY, sign: '=', pos: 0 });
         }
         if (is_jump) {
-            alu_bits = alu_parser(asm_line, C_BINARY, ';', 0);
-            jump_bits = jump_parser(asm_line, JUMP_BINARY);
+            alu_bits = binary_lookup({ asm_line, table: C_BINARY, sign: ';', pos: 0 });
+            jump_bits = binary_lookup({ asm_line, table: JUMP_BINARY, sign: ';' });
         }
 
         return `${OP_CODE}${a}${alu_bits}${dest_bits}${jump_bits}`;
     }
 }
 
-function dest_parser(asm_stripped, dest_table) {
-    const code = asm_stripped.split('=')[0];
-    return dest_table[code];
-}
-
-function jump_parser(asm_stripped, jump_table) {
-    const code = asm_stripped.split(';')[1];
-    return jump_table[code];
-}
-
-function alu_parser(asm_stripped, alu_table, sign, pos = 1) {
-    let code = asm_stripped.split(sign)[pos];
-    return alu_table[code];
+function binary_lookup({ asm_line, table, sign, pos = 1 }) {
+    let code = asm_line.split(sign)[pos];
+    return table[code];
 }
 
 function strip_inline_comment(asm_line) {
