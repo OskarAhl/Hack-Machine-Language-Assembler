@@ -1,11 +1,12 @@
 ### HACK MACHINE LANGUAGE ASSEMBLER
+> Fully functional node.js assembler
+
 * Assembles machine language `.asm` into `.hack` machine code
 * Supports symbols (variables + labels)
-* Written in node.js
 * To learn more about hack - check out https://www.nand2tetris.org/
 
-To use:
-* `node file_name.asm`
+### Usage:
+``` node file_name.asm ```
 * --> creates a new file `file_name.hack`
 
 E.g. `add.asm`
