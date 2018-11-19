@@ -10,12 +10,6 @@ const {
     SYMBOL_MEM_LOC 
 } = lookup_tables;
 
-const rl = readline.createInterface({
-    input: fs.createReadStream(file),
-    output: process.stdout,
-    terminal: false
-});
-
 const outfile_name = file
     .split('/')
     .find((file) => file.includes('.asm'))
@@ -29,8 +23,14 @@ const init = init_read_file();
 init();
 
 function init_read_file () {
+    const rl = readline.createInterface({
+        input: fs.createReadStream(file),
+        output: process.stdout,
+        terminal: false
+    });
     const all_asm = [];
     let line_count = 0;
+
     return function read_file() {
         rl.on('line', (asm_line) => {
             const asm_trimmed = strip_inline_comment(asm_line.trim());
